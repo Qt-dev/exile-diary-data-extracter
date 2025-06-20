@@ -156,7 +156,7 @@ const SpecialMapFragmentPattern = [
   }
 ];
 
-export default generateItems = async () => {
+export default async () => {
   const itemsPerClass = {}
   
   // Pre-Sort Items and Classes
@@ -243,4 +243,6 @@ export default generateItems = async () => {
     names,
     frameTypes
   }, null, 2));
+
+  console.log("Items generated successfully.");
 }
