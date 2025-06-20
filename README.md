@@ -7,8 +7,8 @@ This extracts data to be used in Exile Diary
 
 ```bash
 # Run PoE-dat-explorer 
-pathofexile-dat
+npm run update
 
 # Run the script to generate the right files
-node index.js
+npm run generate
 ```
