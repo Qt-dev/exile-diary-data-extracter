@@ -32,12 +32,17 @@
       "columns": [
         "Id",
         "Name",
+        "Act",
+        "IsUniqueMapArea",
         "AreaLevel",
         "IsTown",
         "IsMapArea",
         "IsLabyrinthArea",
         "IsHideout",
-        "IsVaalArea"
+        "IsVaalArea",
+        "AreaTypeTags",
+        "Connections_WorldAreasKeys",
+        "Bosses_MonsterVarietiesKeys"
       ]
     }
   ]
