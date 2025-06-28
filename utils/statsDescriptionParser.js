@@ -72,33 +72,30 @@ const parseStatDescriptions = () => {
     if (!isInDescriptionBlock) continue;
     
     // Check for stat ID line (starts with a number followed by identifier)
-    if (/^\d+\s+\S+/.test(line)) {
-      // If there was a previous description being built, add it to the result
-      if (!currentDescription) {
-        // Create a new description
-        const parts = line.split(' ');
-        const numOfVariants = parseInt(parts[0]);
-        const statIds = [];
-        for(let j = 1; j <= numOfVariants; j++) {
-          statIds.push(parts[j]);
-        }
-        
-        currentDescription = {
-          numOfIds: numOfVariants,
-          statIds,
-          languages: {
-            "English": {
-              numOfDescriptions: null,
-              descriptions: []
-            }
-          }
-        };
-        
-        currentLanguage = "English";
+    if (/^\d+\s+\S+/.test(line) && !currentDescription) {
+      // Create a new description
+      const parts = line.split(' ');
+      const numOfVariants = parseInt(parts[0]);
+      const statIds = [];
+      for(let j = 1; j <= numOfVariants; j++) {
+        statIds.push(parts[j]);
       }
-  
+      
+      currentDescription = {
+        numOfIds: numOfVariants,
+        statIds,
+        languages: {
+          "English": {
+            numOfDescriptions: null,
+            descriptions: []
+          }
+        }
+      };
+      
+      currentLanguage = "English";
       continue;
     }
+
     
     // Check for language
     if (line.startsWith('lang')) {
@@ -123,7 +120,7 @@ const parseStatDescriptions = () => {
     }
     
     // Check for description variants
-    if (currentDescription && currentLanguage && currentDescription.languages[currentLanguage].descriptions.length < currentDescription.languages[currentLanguage].numOfDescriptions) {
+    if (currentDescription && currentLanguage && currentDescription.languages[currentLanguage].descriptions.length <= currentDescription.languages[currentLanguage].numOfDescriptions) {
       // Parse range and description
       // 3 patterns possible:
       // 1. "rangeStart | rangeEnd "description text" (?negate)
@@ -131,10 +128,15 @@ const parseStatDescriptions = () => {
       // 3. "rangeStart "description text"
       const descMatch = line.match(/(([\d\#]+)[\|\s])?([-\d\#]+)\s+"([^"]+)"/);
       
+      if(line.includes("additional Smuggler's Cache")) {
+        console.log(`Found description: ${line}`);
+        console.log(descMatch);
+      }
       if (descMatch) {
         const rangeStart = descMatch[2]?.trim();
         const rangeEnd = descMatch[3]?.trim();
         const descText = descMatch[4];
+
         
         currentDescription.languages[currentLanguage].descriptions.push({
           rangeStart,
@@ -142,22 +144,23 @@ const parseStatDescriptions = () => {
           text: descText,
           negate: line.includes('negate')
         });
-      } else if (line.startsWith('#') && line.includes('"')) {
-        // Handle special case for negate lines
-        const negateMatch = line.match(/#\|([^"]+)\s+"([^"]+)"/);
+      } 
+      // else if (line.startsWith('#') && line.includes('"')) {
+      //   // Handle special case for negate lines
+      //   const negateMatch = line.match(/#\|([^"]+)\s+"([^"]+)"/);
         
-        if (negateMatch) {
-          const rangeVal = negateMatch[1].trim();
-          const descText = negateMatch[2];
+      //   if (negateMatch) {
+      //     const rangeVal = negateMatch[1].trim();
+      //     const descText = negateMatch[2];
           
-          currentDescription.languages[currentLanguage].descriptions.push({
-            rangeStart: '#',
-            rangeEnd: rangeVal,
-            text: descText,
-            negate: line.includes('negate')
-          });
-        }
-      }
+      //     currentDescription.languages[currentLanguage].descriptions.push({
+      //       rangeStart: '#',
+      //       rangeEnd: rangeVal,
+      //       text: descText,
+      //       negate: line.includes('negate')
+      //     });
+      //   }
+      // }
     }
   }
   
