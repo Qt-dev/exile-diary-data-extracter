@@ -1,5 +1,6 @@
 data/.cache
 data/English
 data/tables
+data/files
 node_modules
 output/*
