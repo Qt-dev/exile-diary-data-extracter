@@ -12,9 +12,9 @@ const parseStatDescriptions = () => {
   const __dirname = path.dirname(__filename);
   
   // Path to the input file relative to this script
-  const inputFilePath = path.join(__dirname, 'data/files/Metadata@StatDescriptions@stat_descriptions.txt');
+  const inputFilePath = path.join(__dirname, '../data/files/Metadata@StatDescriptions@stat_descriptions.txt');
   // Path to output file
-  const outputFilePath = path.join(__dirname, 'output/temp/stat_descriptions.json');
+  const outputFilePath = path.join(__dirname, '../output/temp/stat_descriptions.json');
   
   console.log(`Reading file: ${inputFilePath}`);
   
@@ -60,6 +60,12 @@ const parseStatDescriptions = () => {
     // Check for description lines
     if (line === 'description') {
       isInDescriptionBlock = true;
+      // If there was a previous description being built, add it to the result
+      if (currentDescription) {
+        result.descriptions.push(currentDescription);
+      }
+      // Reset current description
+      currentDescription = null;
       continue;
     }
     
@@ -68,28 +74,29 @@ const parseStatDescriptions = () => {
     // Check for stat ID line (starts with a number followed by identifier)
     if (/^\d+\s+\S+/.test(line)) {
       // If there was a previous description being built, add it to the result
-      if (currentDescription) {
-        result.descriptions.push(currentDescription);
-      }
-      
-      // Create a new description
-      const parts = line.split(' ');
-      const id = parts[0];
-      const statId = parts.slice(1).join(' ');
-      
-      currentDescription = {
-        id: id,
-        statId: statId,
-        languages: {}
-      };
-      
-      currentLanguage = "English";
-      if (!currentDescription.languages[currentLanguage]) {
-        currentDescription.languages[currentLanguage] = {
-          format: null,
-          descriptions: []
+      if (!currentDescription) {
+        // Create a new description
+        const parts = line.split(' ');
+        const numOfVariants = parseInt(parts[0]);
+        const statIds = [];
+        for(let j = 1; j <= numOfVariants; j++) {
+          statIds.push(parts[j]);
+        }
+        
+        currentDescription = {
+          numOfIds: numOfVariants,
+          statIds,
+          languages: {
+            "English": {
+              numOfDescriptions: null,
+              descriptions: []
+            }
+          }
         };
+        
+        currentLanguage = "English";
       }
+  
       continue;
     }
     
@@ -101,7 +108,7 @@ const parseStatDescriptions = () => {
         
         if (!currentDescription.languages[currentLanguage]) {
           currentDescription.languages[currentLanguage] = {
-            format: null,
+            numOfDescriptions: null,
             descriptions: []
           };
         }
@@ -109,21 +116,25 @@ const parseStatDescriptions = () => {
       continue;
     }
     
-    // Check for format number
+    // Check for variant number
     if (/^\d+$/.test(line) && currentDescription && currentLanguage) {
-      currentDescription.languages[currentLanguage].format = line;
+      currentDescription.languages[currentLanguage].numOfDescriptions = parseInt(line);
       continue;
     }
     
-    // Check for description formats
-    if (line.includes('|') && currentDescription && currentLanguage) {
+    // Check for description variants
+    if (currentDescription && currentLanguage && currentDescription.languages[currentLanguage].descriptions.length < currentDescription.languages[currentLanguage].numOfDescriptions) {
       // Parse range and description
-      const descMatch = line.match(/([^|]+)\|([^"]+)\s+"([^"]+)"/);
+      // 3 patterns possible:
+      // 1. "rangeStart | rangeEnd "description text" (?negate)
+      // 2. "rangeStart   rangeValue "description text" (?negate)
+      // 3. "rangeStart "description text"
+      const descMatch = line.match(/(([\d\#]+)[\|\s])?([-\d\#]+)\s+"([^"]+)"/);
       
       if (descMatch) {
-        const rangeStart = descMatch[1].trim();
-        const rangeEnd = descMatch[2].trim();
-        const descText = descMatch[3];
+        const rangeStart = descMatch[2]?.trim();
+        const rangeEnd = descMatch[3]?.trim();
+        const descText = descMatch[4];
         
         currentDescription.languages[currentLanguage].descriptions.push({
           rangeStart,
@@ -157,7 +168,19 @@ const parseStatDescriptions = () => {
 
   const filteredResult = {
     no_description: result.no_description,
-    descriptions: result.descriptions.filter(desc => desc.statId.startsWith('map_'))
+    // descriptions: result.descriptions
+    descriptions: result.descriptions.filter(desc => {
+      return desc.statIds.filter(statId => statId.startsWith('map_')).length > 0
+    })
+    .flatMap(desc => {
+      return desc.statIds.map(statId => {
+        return {
+          statId,
+          numOfIds: desc.numOfIds,
+          languages: desc.languages
+        };
+      })
+    })
   };
   
   // Write the result to a JSON file
