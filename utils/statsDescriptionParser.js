@@ -128,10 +128,6 @@ const parseStatDescriptions = () => {
       // 3. "rangeStart "description text"
       const descMatch = line.match(/(([\d\#]+)[\|\s])?([-\d\#]+)\s+"([^"]+)"/);
       
-      if(line.includes("additional Smuggler's Cache")) {
-        console.log(`Found description: ${line}`);
-        console.log(descMatch);
-      }
       if (descMatch) {
         const rangeStart = descMatch[2]?.trim();
         const rangeEnd = descMatch[3]?.trim();
