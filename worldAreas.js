@@ -10,16 +10,26 @@ async function generateWorldAreas() {
     const worldAreasMap = {};
 
     worldAreasData.forEach((area) => {
-      worldAreasMap[area.Id] = {
-        name: area.Name,
-        act: area.Act,
-        isTown: area.IsTown,
-        isMap: area.IsMapArea,
-        isHideout: area.IsHideout,
-        isLabyrinth: area.IsLabyrinthArea,
-        isVaalArea: area.IsVaalArea,
-        baseLevel: area.AreaLevel,
-      };
+      const tempObject = {};
+      Object.keys(area).forEach((key) => {
+        if(key[0] !== '_') {
+          const formattedKey = key.replace(/^\w/g, (c) => c.toLowerCase());
+          tempObject[formattedKey] = area[key];
+        }
+      });
+      worldAreasMap[area.Id] = tempObject
+      // worldAreasMap[area.Id] = {
+      //   name: area.Name,
+      //   act: area.Act,
+      //   isTown: area.IsTown,
+      //   isMap: area.IsMapArea,
+      //   isHideout: area.IsHideout,
+      //   isLabyrinth: area.IsLabyrinthArea,
+      //   isLabyrinthAirlock: area.IsLabyrinthAirlock,
+      //   isLabyrinthBoss: area.IsLabyrinthBossArea,
+      //   isVaalArea: area.IsVaalArea,
+      //   baseLevel: area.AreaLevel,
+      // };
     });
 
     await fs.writeFile(outputFilePath, JSON.stringify(worldAreasMap, null, 2));

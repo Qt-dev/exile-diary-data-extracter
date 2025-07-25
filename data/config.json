@@ -41,6 +41,8 @@
         "IsTown",
         "IsMapArea",
         "IsLabyrinthArea",
+        "IsLabyrinthAirlock",
+        "IsLabyrinthBossArea",
         "IsHideout",
         "IsVaalArea",
         "AreaTypeTags",
