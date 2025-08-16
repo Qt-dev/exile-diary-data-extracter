@@ -78,6 +78,69 @@
         "Id",
         "Text"
       ]
+    },
+    {
+      "name": "NPCTextAudio",
+      "columns": [
+        "Id",
+        "Text",
+        "NPCs"
+      ]
+    },
+    {
+      "name": "NPCs",
+      "columns": [
+        "Id",
+        "Name",
+        "ShortName"
+      ]
+    },
+    {
+      "name": "IncursionRooms",
+      "columns": [
+        "Id",
+        "Name"
+      ]
+    },
+    {
+      "name": "BetrayalTargets",
+      "columns": [
+        "Id",
+        "FullName"
+      ]
+    },
+    {
+      "name": "AfflictionStartDialogue",
+      "columns": [
+        "WorldAreasKey",
+        "NPCTextAudioKey"
+      ]
+    },
+    {
+      "name": "Shrines",
+      "columns": [
+        "Id",
+        "Name",
+        "Description"
+      ]
+    },
+    {
+      "name": "ClientStrings",
+      "columns": [
+        "Id",
+        "Text"
+      ]
+    },
+    {
+      "name": "UltimatumModifiers",
+      "columns": [
+        "Id",
+        "Name",
+        "Description",
+        "Icon",
+        "Tier",
+        "TextAudio"
+      ]
     }
   ]
 }
