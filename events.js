@@ -35,12 +35,12 @@ const DeliriumTest = /DeliriumVoiceSimulacrum(?<wave>\d+)-/;
 const BlightTest = /Cassia.*(?<action>Interrupt|NewLane).*/;
 const SynthesisTest = /Venarius(BossFight|Guardian\d)(?<action>\w+)\d*/;
 const HarvestTest = /HarvestBoss(?<action>[A-Z][a-z]+)[A-Z].*/;
-const ShaperTest = /Shaper(?<keyword>Banish|MapShapersRealm|Miniboss\dKilled|Intro|HalfHealth|QuarterHealth).*/;
+const ShaperTest = /Shaper(?<keyword>Banish\d|MapShapersRealm|Miniboss\dKilled|HalfHealthA|QuarterHealthA).*/;
 const CatarinaTest = /Catarina(?<action>Phase[A-Z][a-z]+|VaultIntro|VaultFleeing|Downed).*/;
 const SirusTest = /Sirus(?<action>Dismount|SimpleDeathLine|ComplexDeathLine).*/;
 const DarkshrineTest = /Labyrinth(Divine|Darkshrine|Izaro|Portal|Players|BossRoom)[A-Z].*/;
 const LabTest = /Izaro(GargoyleDeath|\d_Prefight|Death).*/;
-const MavenWitnessTest = /MavenTier\dBossVictory\d+/;
+const MavenWitnessTest = /Maven(?<keyword>Tier\dBossVictory\d+|FirstEncounter.*)/;
 const MavenTest = /MavenFinalFightCallsEnvoy\d+/;
 
 const SimulacrumWaveByNumber = [
@@ -92,6 +92,21 @@ const rules = [
   },
   {
     id: 'Incursion',
+    rule: (text) => text.Id.startsWith('AlvaIncursionCongrats') || text.Id.startsWith('AlvaPortal'),
+    action: (text, output) => {
+      output[text.Text] = {
+        id: text.Id,
+        npc: NPCs.find((npc) => npc._index === text.NPCs[0])?.Name || 'Unknown',
+        category: 'Incursion',
+        type: 'Unlock',
+        arguments: {
+          action: text.Id.startsWith('AlvaIncursionCongrats') ? 'end' : 'start',
+        }
+      };
+    }
+  },
+  {
+    id: 'Incursion',
     rule: (text) => text.Id.startsWith('AlvaTempleFeature'),
     action: (text, output) => {
       const roomId = text.Id.replace('AlvaTempleFeature_', '');
@@ -99,7 +114,7 @@ const rules = [
         id: text.Id,
         npc: NPCs.find((npc) => npc._index === text.NPCs[0])?.Name || 'Unknown',
         category: 'Incursion',
-        type: 'Unlock',
+        type: 'TempleRoom',
         arguments: {
           roomId,
           roomName: IncursionRooms.find((room) => room.Id === roomId)?.Name || 'Unknown'
@@ -115,7 +130,7 @@ const rules = [
         id: text.Id,
         npc: NPCs.find((npc) => npc._index === text.NPCs[0])?.Name || 'Unknown',
         category: 'Incursion',
-        type: 'Unlock',
+        type: 'TempleRoom',
         arguments: {
           roomName: 'Temple of Atzoatl'
         }
@@ -140,9 +155,9 @@ const rules = [
   },
   {
     id: 'Conquerors',
-    rule: (text) => /.*Stone(Fight|Flee).*/.test(text.Id),
+    rule: (text) => /.*Stone(Fight|Flee|Death).*/.test(text.Id),
     action: (text, output) => {
-      const stoneCountRegex = /(?<Count>[A-Z][a-z]+)Stone(Fight|Flee)/;
+      const stoneCountRegex = /(?<Count>[A-Z][a-z]+)Stone(Fight|Flee|Death)/;
       const match = text.Id.match(stoneCountRegex);
       const stoneCount = match?.groups?.Count || 'Unknown';
       output[text.Text] = {
@@ -231,7 +246,7 @@ const rules = [
     action: (text, output) => {
       const match = text.Id.match(BlightTest);
       const actionId = match?.groups?.action || 'Unknown';
-      let actionIdText = 'Unknown';
+      let actionIdText = 'unknown';
       switch(actionId) {
         case 'Interrupt':
           actionIdText = 'start';
@@ -262,33 +277,34 @@ const rules = [
       const formattedAction = Case.snake(actionText);
       const actionWords = formattedAction.split('_');
 
-      let action = 'unknown';
-      const args = {};
+      const args = {
+        action: 'unknown'
+      };
       switch(actionWords[0]) {
         case 'introduction':
-          action = 'begin';
+          args.action = 'start';
           args.enemy = 'Venarius';
           break;
         case 'golem':
           args.enemy = actionWords[1] === 'one' ? 'Fractal Gargantuan' : 'Fractal Titan';
           if(actionWords[actionWords.length - 1] === 'defeated') {
-            action = 'defeated';
+            args.action = 'defeated';
           } else {
-            action = 'begin';
+            args.action = 'start';
           }
           break;
         case 'humanoid':
           args.enemy = actionWords[1] === 'one' ? 'Synthete Masterpiece' : 'Synthete Nightmare';
           if(actionWords[actionWords.length - 1] === 'defeated') {
-            action = 'defeated';
+            args.action = 'defeated';
           } else {
-            action = 'begin';
+            args.action = 'start';
           }
           break;
         case 'depart':
         case 'defeat':
           args.enemy = 'Venarius';
-          action = 'defeated';
+          args.action = 'defeated';
       }
 
       output[text.Text] = {
@@ -297,7 +313,8 @@ const rules = [
         category: 'Synthesis',
         type: 'Event',
         arguments: {
-          synthesis: true
+          synthesis: true,
+          ...args
         }
       };
     }
@@ -335,41 +352,58 @@ const rules = [
     rule: (text) => ShaperTest.test(text.Id),
     action: (text, output) => {
       const match = text.Id.match(ShaperTest);
-      const actionText = match?.groups?.action || 'Unknown';
+      const actionText = match?.groups?.keyword || 'Unknown';
 
-      const action = 'unknown';
-      const enemy = 'Shaper';
-      const phase = 1;
+      let action = 'unknown';
+      let enemy = 'Shaper';
+      let phase = 1;
 
       switch(actionText) {
         case 'MapShapersRealm':
-          action = 'entered';
-          break;
-        case 'Intro':
           action = 'started';
           break;
         case 'Miniboss1Killed':
           action = 'defeated';
-          enemy = 'The Uncreated';
+          enemy = 'Miniboss 1';
           phase = 1;
-          break;
-        case 'HalfHealth':
-          action = 'phaseStarted';
-          phase = 2;
           break;
         case 'Miniboss2Killed':
           action = 'defeated';
-          enemy = 'The Unshaped';
+          enemy = 'Miniboss 2';
+          phase = 1;
+          break;
+        case 'Miniboss3Killed':
+          action = 'defeated';
+          enemy = 'Miniboss 3';
+          phase = 1;
+          break;
+        case 'Miniboss4Killed':
+          action = 'defeated';
+          enemy = 'Miniboss 4';
           phase = 2;
           break;
-        case 'QuarterHealth':
+        case 'HalfHealthA':
+          action = 'phaseStarted';
+          phase = 2;
+          break;
+        case 'QuarterHealthA':
           action = 'phaseStarted';
           phase = 3;
           break;
-        case 'Banish':
+        case 'Banish6':
+          action = 'phaseEnded';
+          phase = 1;
+          break;
+        case 'Banish2':
+          action = 'phaseEnded';
+          phase = 2;
+          break;
+        case 'Banish3':
           action = 'defeated';
           phase = 3;
           break;
+        default:
+          return;
       }
 
       output[text.Text] = {
@@ -395,7 +429,7 @@ const rules = [
       let firstFight = false;
       switch(match?.groups?.action) {
         case 'VaultIntro':
-          action = 'started';
+          action = 'start';
           firstFight = true;
           break;
         case 'VaultFleeing':
@@ -407,28 +441,27 @@ const rules = [
           phase = 4;
           break;
         case 'PhaseZero':
-          action = 'started';
+          action = 'start';
           phase = 1;
           break;
         case 'PhaseOne':
-          action = 'started';
+          action = 'start';
           phase = 2;
           break;
         case 'PhaseTwo':
-          action = 'started';
+          action = 'start';
           phase = 3;
           break;
         case 'PhaseThree':
-          action = 'started';
+          action = 'start';
           phase = 4;
           break;
         case 'PhaseFour':
-          action = 'started';
+          action = 'start';
           phase = 5;
           break;
         default:
           return;
-          break;
       }
       output[text.Text] = {
         id: text.Id,
@@ -528,7 +561,7 @@ const rules = [
         id: text.Id,
         npc: 'Izaro',
         category: 'Labyrinth',
-        type: 'BossFight',
+        type: 'Run',
         arguments: {
           action,
           phase,
@@ -541,13 +574,18 @@ const rules = [
     id: "MavenWitness",
     rule: (text) => MavenWitnessTest.test(text.Id),
     action: (text, output) => {
+      const match = text.Id.match(MavenWitnessTest);
+      if (!match) return;
+
+      const keyword = match.groups.keyword;
+      
       output[text.Text] = {
         id: text.Id,
         npc: NPCs.find((npc) => npc._index === text.NPCs[0])?.Name || 'Unknown',
-        category: 'MavenWitness',
-        type: 'BossFight',
+        category: 'Maven',
+        type: 'Witness',
         arguments: {
-          action: 'defeated',
+          action: keyword.startsWith('FirstEncounter') ? 'start' : 'defeated',
         }
       };
     }
