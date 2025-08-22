@@ -36,6 +36,7 @@ const BlightTest = /Cassia.*(?<action>Interrupt|NewLane).*/;
 const SynthesisTest = /Venarius(BossFight|Guardian\d)(?<action>\w+)\d*/;
 const HarvestTest = /HarvestBoss(?<action>[A-Z][a-z]+)[A-Z].*/;
 const ShaperTest = /Shaper(?<keyword>Banish\d|MapShapersRealm|Miniboss\dKilled|HalfHealthA|QuarterHealthA).*/;
+const ShaperGuardiansTest = /ShaperMap(?<guardian>Phoenix|Hydra|Minotaur|Chimera).*/;
 const CatarinaTest = /Catarina(?<action>Phase[A-Z][a-z]+|VaultIntro|VaultFleeing|Downed).*/;
 const SirusTest = /Sirus(?<action>Dismount|SimpleDeathLine|ComplexDeathLine).*/;
 const DarkshrineTest = /Labyrinth(Divine|Darkshrine|Izaro|Portal|Players|BossRoom)[A-Z].*/;
@@ -415,6 +416,27 @@ const rules = [
           action,
           enemy,
           phase,
+        }
+      };
+    }
+  },
+  {
+    id: "ShaperGuardians",
+    rule: (text) => ShaperGuardiansTest.test(text.Id),
+    action: (text, output) => {
+      const match = text.Id.match(ShaperGuardiansTest);
+      if( !(match?.groups?.guardian) ) return;
+
+      const guardianName = `Guardian of the ${match.groups.guardian}`;
+
+      output[text.Text] = {
+        id: text.Id,
+        npc: NPCs.find((npc) => npc._index === text.NPCs[0])?.Name || 'Unknown',
+        category: 'Shaper',
+        type: 'Guardian',
+        arguments: {
+          mapStarted: true,
+          enemy: guardianName,
         }
       };
     }
