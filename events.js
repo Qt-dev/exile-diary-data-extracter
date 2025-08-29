@@ -312,7 +312,7 @@ const rules = [
         id: text.Id,
         npc: NPCs.find((npc) => npc._index === text.NPCs[0])?.Name || 'Unknown',
         category: 'Synthesis',
-        type: 'Event',
+        type: 'BossFight',
         arguments: {
           synthesis: true,
           ...args
