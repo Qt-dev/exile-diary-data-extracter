@@ -1,5 +1,5 @@
 {
-  "patch": "3.26.0.12",
+  "patch": "3.27.0.1",
 
   "steam": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Path of Exile",
 
@@ -75,8 +75,7 @@
     {
       "name": "Stats",
       "columns": [
-        "Id",
-        "Text"
+        "Id"
       ]
     },
     {
